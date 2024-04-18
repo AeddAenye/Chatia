@@ -1,17 +1,13 @@
-version: '3.5'
-
 services:
-  chatia_db:
+  db:
     image: postgres:14.3-alpine
-    container_name: chatia_db
     restart: always
+    environment:
+      POSTGRES_DB: chatia
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_USER=admin
     volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/postgresql/data
