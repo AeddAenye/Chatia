@@ -61,26 +61,40 @@ app.post('/api/newchat', async (req, res) => {
     const { ownername, friendname } = req.body;
 
     try {
-        const sql = "SELECT ownername, friendname FROM chats WHERE ownername = $1 AND friendname = $2 OR ownername = $2 AND friendname = $1";
+        const sql = "SELECT * FROM users WHERE username = $1";
+        const data = await pool.query(sql, [friendname]);
+        if (data.rows.length === 0) {
+            res.status(404).json({ success: false, message: 'Пользователь не найден' });
+            return;
+        }
+    } catch (error) {
+        res.status(501).json({ success: false, error: error.message });
+        return;
+    }
+
+
+    try {
+        const sql = "SELECT * FROM chats WHERE ownername = $1 AND friendname = $2 OR ownername = $2 AND friendname = $1";
         const data = await pool.query(sql, [ownername, friendname]);
         if (data.rows.length > 0) {
             res.status(409).json({ success: false, message: 'Чат уже существует' });
             return;
         }
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(502).json({ success: false, error: error.message });
         return;
     }
+
 
     try {
         const sql ="INSERT INTO chats (ownername, friendname) VALUES ($1, $2)";
         await pool.query(sql, [ownername, friendname]);
         res.status(201).json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(503).json({ success: false, error: error.message });
     }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });

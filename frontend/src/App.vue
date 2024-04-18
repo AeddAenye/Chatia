@@ -29,8 +29,11 @@ import { useStore } from 'vuex'
 const store = useStore()
 provide('store', store)
 
-let friendname = ref('')
+let friendname = computed(() => store.getters.getFriendname)
 
+onBeforeMount(() => {
+    store.dispatch('getChats')
+})
 </script>
 
 <style scoped>

@@ -2,7 +2,7 @@
   <Menu />
   <div class="dialog-container">
     <Dialog v-for="chat in chats" :key="chat.id"
-    :dialogName="chat.friendname" @click="gotoChat(chat)"/>
+    :dialogName="chat.friendname" @click="openChat(chat)"/>
   </div>
 </template>
 
@@ -20,16 +20,16 @@ export default {
 }
 </script>
 <script setup>
-import { ref, onMounted, inject, computed } from 'vue'
+import { ref, inject, computed } from 'vue'
 
 const store = inject('store')
 let dialogs = ref({})
 
 const chats = computed(() => store.getters.getChats)
 
-const gotoChat = (chat) => {
+const openChat = (chat) => {
   store.commit('setFriendname', chat.friendname)
-  store.commit('setChatId', chat.id)
+  store.commit('setActiveChat', chat)
 }
 
 </script>

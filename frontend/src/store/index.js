@@ -1,23 +1,19 @@
+import NewDialog from '@/components/ModalWindows/newDialog.vue'
 import { createStore } from 'vuex'
 
 export default createStore({
   state: {
     authorized: localStorage.getItem('authorized') === 'true',
-    access_token: localStorage.getItem('access_token'),
     username: localStorage.getItem('username'),
     friendname: '',
     chats: [],
-    chatId: ''
+    activeChat: ''
   },
 
   mutations: {
     setAuthorized(state, payload) {
       state.authorized = payload
       localStorage.setItem('authorized', payload)
-    },
-    setAccessToken(state, payload) {
-      state.access_token = payload
-      localStorage.setItem('access_token', payload)
     },
     setUsername(state, payload) {
       state.username = payload
@@ -27,26 +23,20 @@ export default createStore({
       state.friendname = payload
     },
 
-    setChatId(state, payload) {
+    setActiveChat(state, payload) {
       state.chatId = payload
     },
 
     setChats(state, payload) {
       payload.forEach(elem => {
-        if (elem.owner_nickname === state.username) {
-          state.chats.push(elem = {id: elem.id, friendname: elem.friend_nickname})          
+        if (elem.ownername === this.state.username) {
+          state.chats.push(elem = {id: elem.id, friendname: elem.friendname})          
         }
         else {
-          state.chats.push(elem = {id: elem.id, friendname: elem.owner_nickname})
+          state.chats.push(elem = {id: elem.id, friendname: elem.ownername})
         }
       })
       console.log(state.chats);
-    },
-    resetState(state) {
-      state.authorized = false
-      state.access_token = ''
-      state.username = ''
-      state.friendname = ''
     }
   },
 
@@ -75,14 +65,50 @@ export default createStore({
         throw error;
       }
     },
+
+    async getChats({ commit }) {
+      const url = 'http://localhost:3000/api/chats?username=' + this.state.username;
+      const requestOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      try {
+        let response = await fetch(url, requestOptions);
+        let json = await response.json();
+        if (response.ok) {
+          commit('setChats', json.chats)
+        } else {
+          throw new Error('Failed to get chats');
+        }
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    async newChat({ commit }, data) {
+      const url = 'http://localhost:3000/api/newchat';
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      };
+
+      try {
+        await fetch(url, requestOptions);
+      } catch (error) {
+        throw error;
+      }
+    }
   },
 
   getters: {
     getAuthorized(state) {
       return state.authorized
-    },
-    getAccessToken(state) {
-      return state.access_token
     },
     getUsername(state) {
       return state.username
@@ -95,8 +121,8 @@ export default createStore({
       return state.chats
     },
 
-    getChatId(state) {
-      return state.chatId
+    getActiveChat(state) {
+      return state.activeChat
     }
   }
 })

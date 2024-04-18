@@ -13,32 +13,27 @@
   
   <script setup>
   import { defineEmits, ref, inject } from 'vue'
-  import hashPassword from './hashpasswd.js'
   
   const store = inject('store')
   const emits = defineEmits(['close'])
   
   let username = ref('')
-  let password = ref('')
   let error = ref(false)
   
   const close = () => {
     username.value = ''
-    password.value = ''
     error.value = false
     emits('close')
   }
   
   const newDialog = async () => {
     const data = {
-      username: store.getters.getUsername,
+      ownername: store.getters.getUsername,
       friendname: username.value,
-      token: store.getters.getAccessToken
     }
   
     try {
-      await store.dispatch('newDialog', data);
-      emits('close');
+      await store.dispatch('newChat', data);
     } catch (error) {
       console.error('newDialog Error:', error);
       error.value = true
