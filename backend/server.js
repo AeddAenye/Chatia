@@ -1,8 +1,8 @@
 const express = require("express");
 const app = express();
 
-app.use(require("cors")());
 app.use(express.json());
+app.use(require("cors")());
 
 const pool = require("./connect.js");
 
@@ -15,7 +15,6 @@ app.post('/api/login', async (req, res) => {
 
     const data = await pool.query("SELECT username, passwd_hash FROM users WHERE username = $1", [username])
     
-
     if (data.rows.length == 0) {
         const reg = await pool.query("INSERT INTO users (username, passwd_hash) VALUES ($1, $2)", [username, password])
         res.status(201).json({ success: true })
@@ -33,4 +32,4 @@ app.post('/api/login', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
-  });
+});
