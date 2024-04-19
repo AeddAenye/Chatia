@@ -8,21 +8,23 @@
 <script setup>
   import { ref, inject } from 'vue';
   let inputValue = ref('');
-
+  const socket = inject('socket');
   const store = inject('store');
 
   const sendMessage = () => {
-    store.dispatch('sendMessage', {
-      chat_id: store.getters.getChatId,
-      text: inputValue.value,
-      friendname: store.getters.getFriendname,
-      username: store.getters.getUsername,
-      sending_time: new Date().getTime()
-    })
+    if (inputValue.value) {
+      let chat = store.getters.getActiveChat
+      console.log(chat);
+      store.dispatch('newMessage', {
+        message: inputValue.value,
+        ownername: store.getters.getUsername,
+        friendname: store.getters.getFriendname,
+        chat_id: chat.id
+      });
+      inputValue.value = '';
 
-
-    inputValue.value = '';
   }
+}
 
 </script>
   

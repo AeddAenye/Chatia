@@ -23,16 +23,30 @@ export default {
 </script>
 
 <script setup>
-import { provide, ref, watch, onBeforeMount, computed } from 'vue'
+import { provide, ref, watch, onBeforeMount,onMounted , computed } from 'vue'
 import { useStore } from 'vuex'
+import { io } from 'socket.io-client'
 
 const store = useStore()
+let socket;
 provide('store', store)
+
+
 
 let friendname = computed(() => store.getters.getFriendname)
 
 onBeforeMount(() => {
-    store.dispatch('getChats')
+    socket = io('http://localhost:3000')
+    provide('socket', socket)
+})
+
+onMounted(() => {
+
+
+    if (store.getters.getAuthorized){
+        socket.emit('authenticate', store.getters.getUsername)
+        store.dispatch('chats')
+    }
 })
 </script>
 

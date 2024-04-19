@@ -1,5 +1,8 @@
 import NewDialog from '@/components/ModalWindows/newDialog.vue'
 import { createStore } from 'vuex'
+import { io } from'socket.io-client'
+
+const socket = io('http://localhost:3000')
 
 export default createStore({
   state: {
@@ -7,7 +10,9 @@ export default createStore({
     username: localStorage.getItem('username'),
     friendname: '',
     chats: [],
-    activeChat: ''
+    messages: [],
+    activeChat: '',
+    error: ''
   },
 
   mutations: {
@@ -24,19 +29,34 @@ export default createStore({
     },
 
     setActiveChat(state, payload) {
-      state.chatId = payload
+      state.activeChat = payload
     },
 
     setChats(state, payload) {
-      payload.forEach(elem => {
-        if (elem.ownername === this.state.username) {
-          state.chats.push(elem = {id: elem.id, friendname: elem.friendname})          
+      state.chats = payload.map(elem => {
+        const existingChat = state.chats.find(chat => chat.id === elem.chat_id);
+        if (existingChat) {
+          return existingChat;
+        } else {
+          return {
+            id: elem.chat_id,
+            friendname: elem.ownername === this.state.username ? elem.friendname : elem.ownername
+          };
         }
-        else {
-          state.chats.push(elem = {id: elem.id, friendname: elem.ownername})
-        }
-      })
-      console.log(state.chats);
+      });
+    },
+    
+
+    clearChats (state) {
+      state.chats = []
+    },
+
+    setError(state, payload) {
+      state.error = payload
+    },
+
+    setMessages(state, payload) {
+      state.messages = payload
     }
   },
 
@@ -59,14 +79,23 @@ export default createStore({
           commit('setUsername', data.username)
           commit('setAuthorized', true)
         } else {
-          throw new Error('Failed to login');
+          commit('setError', json.message)
+          throw new Error(json.message || 'Failed to login');
         }
       } catch (error) {
         throw error;
       }
     },
+    async logout({ commit }) {
+      commit('setAuthorized', false)
+      commit('setUsername', '')
+      commit('setFriendname', '')
+      commit('clearChats')
 
-    async getChats({ commit }) {
+      console.log('Logged out', this.state.chats);
+    },
+
+    async chats({ commit }) {
       const url = 'http://localhost:3000/api/chats?username=' + this.state.username;
       const requestOptions = {
         method: 'GET',
@@ -78,8 +107,10 @@ export default createStore({
       try {
         let response = await fetch(url, requestOptions);
         let json = await response.json();
+        console.log("CHATS ", json.chats);
         if (response.ok) {
-          commit('setChats', json.chats)
+          console.log("JSON chats", json.chats);
+          await commit('setChats', json.chats)
         } else {
           throw new Error('Failed to get chats');
         }
@@ -99,7 +130,73 @@ export default createStore({
       };
 
       try {
-        await fetch(url, requestOptions);
+        const response = await fetch(url, requestOptions);
+        const json = await response.json();
+        console.log("JSON newchat", json);
+        if (response.ok) {
+          commit('setChats', json.chats)
+          socket.emit('newchat', {
+            ownername: data.ownername,
+            friendname: data.friendname
+          })
+        } else {
+          commit('setError', json.message)
+          throw new Error(json.message || 'Failed to create chat');
+        }
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    async newMessage({ commit }, data) {
+      const url = 'http://localhost:3000/api/newmessage';
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      };
+
+      try {
+        const response = await fetch(url, requestOptions);
+        const json = await response.json();
+        console.log("JSON newmessage", json);
+        if (response.ok) {
+          socket.emit('newmessage', {
+            ownername: data.ownername,
+            friendname: data.friendname,
+            message: data.message,
+            chat_id: data.chat_id,
+          })
+        } else {
+          commit('setError', json.message)
+          throw new Error(json.message || 'Failed to create message');
+        }
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+
+    async chatMessages({ commit }) {
+      const chat = this.state.activeChat
+      const url = 'http://localhost:3000/api/chatmessages?chat_id=' + chat.id;
+      const requestOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      try {
+        let response = await fetch(url, requestOptions);
+        let json = await response.json();
+        console.log("JSON chatmessages", json);
+        if (response.ok) {
+          await commit('setMessages', json.messages)
+        } else {
+          throw new Error('Failed to get chats');
+        }
       } catch (error) {
         throw error;
       }
@@ -123,6 +220,13 @@ export default createStore({
 
     getActiveChat(state) {
       return state.activeChat
+    },
+
+    getError(state) {
+      return state.error
+    },
+    getMessages(state) {
+      return state.messages
     }
   }
 })

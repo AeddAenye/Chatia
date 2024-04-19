@@ -5,21 +5,24 @@
           <button type="button" @click="close()">X</button>
         </div>
         <input type="text" placeholder="Ваш ник" v-model="username" required minlength="4" maxlength="8">
-        <input type="password" name="" placeholder="Ваш пароль" v-model="password" required minlength="8">
+        <input type="password" name="" placeholder="Ваш пароль" v-model="password" required minlength="8" maxlength="32">
         <button type="button" @click="login()">Войти</button>
+        <div class="error"><span>{{ error }}</span></div>
       </div>
     </div>
   </template>
   
   <script setup>
-  import { defineEmits, ref, inject } from 'vue'
+  import { defineEmits, ref, inject, computed} from 'vue'
   import hashPassword from './hashpasswd.js'
   
   const store = inject('store')
+  const socket = inject('socket')
   const emits = defineEmits(['close'])
   
   let username = ref('')
   let password = ref('')
+  let error = computed(() => store.getters.getError)
   
   const close = () => {
     username.value = ''
@@ -28,13 +31,21 @@
   }
   
   const login = async () => {
-    const data = {
-      username: username.value,
-      password: hashPassword(password.value)
-    }
+    let data = {}
+      if(username.value !== '' || password.value !== ''){
+        data = {
+          username: username.value,
+          password: hashPassword(password.value)
+        }
+      }
+ 
   
     try {
+      socket.emit('authenticate', username.value)
       await store.dispatch('login', data);
+      
+      await store.dispatch('chats')
+      
       emits('close');
     } catch (error) {
       console.error('Login Error:', error);

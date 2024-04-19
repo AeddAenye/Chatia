@@ -7,6 +7,50 @@
 </template>
 
 
+<script setup>
+import { ref, inject, computed, onMounted, watch } from 'vue'
+
+const store = inject('store')
+const socket = inject('socket')
+
+let chats = ref([])
+
+watch(() => store.state.chats, (newVal) => {
+  chats.value = newVal
+})
+
+const openChat = (chat) => {
+  store.commit('setFriendname', chat.friendname)
+  console.log(chat)
+  store.commit('setActiveChat', chat)
+
+
+  socket.emit('openchat', {
+            ownername: store.getters.getUsername,
+            friendname: store.getters.getFriendname,
+            chat_id: store.getters.getActiveChat.id,
+          })
+}
+
+onMounted(() => {
+  store.dispatch('chats').then(() => {
+    chats.value = store.getters.getChats
+    console.log("ПОСЛЕ ДИСПАТЧА", chats.value)
+
+  });
+})
+
+socket.on('newchat', () => {
+  console.log("ПОЛУЧЕН ЭМИТ ")
+  console.log(chats.value)
+  store.dispatch('chats').then(() => {
+    chats.value = store.getters.getChats
+    console.log("ПОСЛЕ ДИСПАТЧА", chats.value)
+  });
+})
+
+</script>
+
 <script>
 import Dialog from './singleDialog.vue'
 import Menu from './menu.vue'
@@ -18,20 +62,6 @@ export default {
     Menu
   }
 }
-</script>
-<script setup>
-import { ref, inject, computed } from 'vue'
-
-const store = inject('store')
-let dialogs = ref({})
-
-const chats = computed(() => store.getters.getChats)
-
-const openChat = (chat) => {
-  store.commit('setFriendname', chat.friendname)
-  store.commit('setActiveChat', chat)
-}
-
 </script>
 
 <style scoped>

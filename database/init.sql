@@ -13,3 +13,13 @@ CREATE TABLE IF NOT EXISTS chats (
     last_message_id INT,
     read_status BOOLEAN
 );
+
+CREATE TABLE .messages (
+	message_id SERIAL PRIMARY KEY,
+    ownername VARCHAR(16) NOT NULL,
+    friendname VARCHAR(16) NOT NULL,
+	chat_id int,
+    message VARCHAR(1000) NOT NULL,
+    send_time TIMESTAMP
+);
+

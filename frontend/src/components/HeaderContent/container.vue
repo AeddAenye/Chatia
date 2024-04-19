@@ -13,9 +13,10 @@
                 <button type="button" class="action__button" @click="loginModal = true">Войти в сеть</button >
                     <LoginModal  v-show="loginModal" @close="loginModal = false"/>
                     <span></span>
-            </div>
-
-        <div class="account" v-if=auth>
+                </div>
+                
+            <div class="account" v-if=auth>
+                <button type="button" class="action__button" @click="logout()">Выйти</button>
 
             <div class="name">
                 <span>{{ username }}</span>
@@ -34,27 +35,28 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useStore } from 'vuex';
-import RegModal from '../ModalWindows/registration.vue';
-import LoginModal from '../ModalWindows/login.vue';
+import { ref, computed, inject } from 'vue';
 
 let loginModal = ref(false);
-const store = useStore();
+const store = inject('store')
+const socket = inject('socket')
 
 const username = computed(() => store.getters.getUsername)
 const auth = computed(() => store.getters.getAuthorized)
+const logout = () => {
+    store.commit('clearChats')
+    socket.emit('disauthenticate', store.getters.getUsername)
+    store.dispatch('logout');
+}
 
 </script>   
 
 <script>
-import RegModal from '../ModalWindows/registration.vue'
 import LoginModal from '../ModalWindows/login.vue'
 
 export default {
   name: 'HeaderContainer',
   components: {
-    RegModal,
     LoginModal
   }
 }
@@ -129,7 +131,7 @@ img{
     gap: 0.5svw;
 }
 
-.login-container .action__button{
+.action__button{
     font-size: 1svw;
     padding: 0.5svw;
     border-radius: 0.7svw;

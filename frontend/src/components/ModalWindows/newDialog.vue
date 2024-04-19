@@ -6,39 +6,46 @@
         </div>
         <input type="text" placeholder="Ник пользователя" v-model="username" required minlength="4">
         <button type="button" @click="newDialog()">Создать диалог</button>
-        <div v-if="error">Ошибочка вышла...</div>
+        <div class="error"><span>{{ error }}</span></div>
       </div>
     </div>
   </template>
   
   <script setup>
-  import { defineEmits, ref, inject } from 'vue'
+  import { defineEmits, ref, inject, computed } from 'vue'
   
   const store = inject('store')
   const emits = defineEmits(['close'])
+  const socket = inject('socket')
   
   let username = ref('')
-  let error = ref(false)
+  let error = computed(() => store.getters.getError)
   
   const close = () => {
     username.value = ''
-    error.value = false
+    error = ''
     emits('close')
   }
   
   const newDialog = async () => {
-    const data = {
+    let data = {}
+
+    if(username.value !== '') {
+      data = {
       ownername: store.getters.getUsername,
       friendname: username.value,
     }
+    }
   
     try {
+      store.commit('setError', '')
       await store.dispatch('newChat', data);
+      socket.emit('newChat', data)
     } catch (error) {
-      console.error('newDialog Error:', error);
-      error.value = true
+      throw error
     }
   }
+
   </script>
   
 <style scoped>
